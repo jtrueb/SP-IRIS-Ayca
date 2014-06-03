@@ -316,13 +316,13 @@ end;
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
     temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
-    [~,temp_ind_med] = max(temp,3);
+    [~,temp_ind_med] = max(temp(:,3));
     ind_med=temp(temp_ind_med,1);
     
     
      % acquire 100nm resolution data point
     [handles, tree_counter(ind_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse-2,2));
+        tree_counter(ind_mid-1,2));
     
     set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
     cla(handles.axesPlot);
@@ -330,17 +330,18 @@ end;
     
     %both directions for fine
     [handles, tree_counter(ind_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse+2,2));
+        tree_counter(ind_med_+1,2));
     
     set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
     cla(handles.axesPlot);
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
     temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
-    [~,temp_ind_fine] = max(temp,3);
+    [~,temp_ind_fine] = max(temp(:,3));
     ind_focus=temp(temp_ind_fine,1);
 
-
+[handles, ~] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+        tree_counter(ind_focus,2));
 
 
 % 
@@ -367,8 +368,6 @@ if strcmpi(options,'save')
     
     particle_count = max_focus;
     
-    %             [particle_count,ParticleData] = spd_automated(handles,data,particle_type,minSize,maxSize); %Detect particles
-    %             disp(['Full FOV - ' particle_type ' Particles found: ' num2str(particle_count)]);
     
     output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
 else
