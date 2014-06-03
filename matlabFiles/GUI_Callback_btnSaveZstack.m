@@ -20,6 +20,7 @@ msg = 'Acquiring Z-Stack'; feedbackLvl = 1; errorFlag = 0;
 % [handles,output] = ACQUIRE_DefocusScan_binarysearch(handles,0,1,0,'focus',25);
 
 % [handles,output] = ACQUIRE_autofocus_dynamic(handles,0,1,0,'focus',25,0);
+[handles,output] = ACQUIRE_autofocus_dynamic_v2(handles,1,0,'second',0,'focus',25,1);
 [handles,temp] = ACQUIRE_DefocusScan_v6(handles,0,1,0);
 [ output ] = ALIGN_zstack_calibrate_par_diffG(temp.zstack,temp.matname);
 

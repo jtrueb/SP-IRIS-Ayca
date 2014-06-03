@@ -198,7 +198,7 @@ alignment.x_plane_angle=atan(alignment.plane_xslope)*180/pi;  %in degrees
 alignment.y_plane_angle=atan(alignment.plane_yslope)*180/pi;  %in degrees
 
 alignment.x_screw_turns=alignment.plane_xslope*screw_span*tpi*(1); %in turns
-alignment.y_screw_turns=alignment.plane_yslope*screw_span*(1)*tpi;%in turns, reverse screw direction for y
+alignment.y_screw_turns=alignment.plane_yslope*screw_span*(-1)*tpi;%in turns, reverse screw direction for y
 
 alignment.x_screw_dtheta=alignment.x_screw_turns*360; %in degrees
 alignment.y_screw_dtheta=alignment.y_screw_turns*360; %in degrees
