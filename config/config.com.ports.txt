@@ -1,0 +1,6 @@
+mmc100:COM0
+mfc2000:COM0
+mmc100Z:COM0
+pollux:COM0
+arduino:COM0
+

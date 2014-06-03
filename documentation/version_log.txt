@@ -1,0 +1,26 @@
+6/21/2013 (11, NSFAIR v2) - Implemented new Logo location for the high contrast region implement in the second mask design
+
+11/29/2012 (10, Benchtop Top Edition) - Can operate on SP-IRIS1 & IRISFocal
+To use operate on SP-IRIS1 or IRISFocal, provide the name as a string when calling the GUI. 
+Fixed excel sheet not appending data.
+
+11/18/2012 (9, Automated Edition) - Autodetection of corner detection implemented. 
+Use of a hard-offset has created a completely automated acquisition platform.
+Implemented a stop button
+Layout has been redesigned. Status is now at top. Unused features hidden.
+Warnings will now be displayed in red.
+GUI will open attached to right of screen.
+Second status output implemented to track acquisition progress: 'Spot 3 of 20'
+Add preview buttons to instrument tab
+Added radio btns for multiple movement mode: Slow/Fast/Pitch
+Direction of acquisition changed to top-bottom
+
+10/02/2012 (8) - Reduced plane detection from five corners to four.
+Automated particle detection.
+Stages will be de-energized to prevent jerking.
+Movement btns are disabled while stages are moving
+Data will now be save in an excel and mat file
+
+07/19/2012 (7) - Welcome tab buttons disable/enable order
+Processing of data shall be done manually
+Backlash correction implemented(Always go right->left and bottom-top)

@@ -1,0 +1,3 @@
+quality:289.448
+intensity:84.554
+n_variance:321.062
