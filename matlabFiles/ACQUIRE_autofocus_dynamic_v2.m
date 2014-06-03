@@ -7,8 +7,8 @@ function [handles,output] = ACQUIRE_autofocus_dynamic_v2(handles,numLoop,z_init,
 %good defaults are 17,25,33
 %ROI_flag = 1 reduces focus FOV to 1/4 of full for increased speed
 
-peak_gap_floor=3;
-peak_gap_ceil=1;
+peak_gap_floor=2;
+peak_gap_ceil=2;
 maxLoop = 6;
 secondary_flag=0;
 
@@ -85,11 +85,7 @@ if smart_flag
 end
 
 %% Focus
-if enableFocus
-    [handles val] = FOCUS_Image(handles,0,1,1,0); %Update Z
-    z_init = getParams(handles,'ZPos');
-    [handles] = STAGE_MoveAbsolute(handles,{stages.axis.z},z_init+init_offset);
-end
+
 
 
 %         z_pos = z_temp + sweepMin - sweepStep;
@@ -166,8 +162,7 @@ else
     tree_counter(1:scan_width,2)=tree_lowbound+(tree_counter(1:scan_width,1)-1)*.1;     %Column 2 set to z position (nominal)
 end
 
-tt2 = toc(tt1);
-tt3 = tic();
+
 istart=tic;
 for m=start_ind:4:end_ind
     if FLAG_StopBtn('check')
@@ -201,7 +196,16 @@ end
 
 
 % [max_coarse,ind_coarse] = max(tree_counter(:,3));
-[xmax,imax,xmin,imin] = extrema(tree_counter(:,3));
+
+measured_mask=tree_counter(:,3)>0;
+        full_inds=tree_counter(measured_mask,:);
+        [xmax,imax,xmin,imin] = extrema(full_inds(:,3));
+        
+      
+        imax=full_inds(imax,1);
+
+
+% [xmax,imax,xmin,imin] = extrema(tree_counter(:,3));
 secondary_flag=0;
 
 if length(imax)==1;
@@ -245,8 +249,6 @@ end
 
 
 
-tt4 = toc(tt3);
-tt5 = tic();
 if (ind_coarse==tree_counter(1,1))  || (abs(tree_counter(ind_coarse,2)-tree_counter(1,2))<peak_gap_floor)
     
     %extend tree counter by scan_length for lower z-positions
@@ -267,6 +269,10 @@ if (ind_coarse==tree_counter(1,1))  || (abs(tree_counter(ind_coarse,2)-tree_coun
         data=[];
         particle_count=-1;
         offset=tree_counter(ind_coarse,2)-z_init;
+        if ROI_flag
+            [handles] = setParams(handles,'ROI',curROI);
+        end
+        [handles] = STAGE_MoveAbsolute(handles,zAxes,z_init);
         output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
         return;
     end
@@ -284,6 +290,10 @@ elseif (ind_coarse==tree_counter(end,1)) || (abs(tree_counter(end,2)-tree_counte
         data=[];
         particle_count=-1;
         offset=tree_counter(ind_coarse,2)-z_init;
+        if ROI_flag
+            [handles] = setParams(handles,'ROI',curROI);
+        end
+        [handles] = STAGE_MoveAbsolute(handles,zAxes,z_init);
         output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
         disp(['Maximum Number of loops reached, focus not found.']);
         return;
@@ -316,13 +326,13 @@ end;
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
     temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
-    [~,temp_ind_med] = max(temp,3);
+    [~,temp_ind_med] = max(temp(:,3));
     ind_med=temp(temp_ind_med,1);
     
     
      % acquire 100nm resolution data point
     [handles, tree_counter(ind_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse-2,2));
+        tree_counter(ind_med-1,2));
     
     set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
     cla(handles.axesPlot);
@@ -330,17 +340,25 @@ end;
     
     %both directions for fine
     [handles, tree_counter(ind_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse+2,2));
+        tree_counter(ind_med+1,2));
     
     set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
     cla(handles.axesPlot);
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
     temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
-    [~,temp_ind_fine] = max(temp,3);
+    [~,temp_ind_fine] = max(temp(:,3));
     ind_focus=temp(temp_ind_fine,1);
+    
+     set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+    cla(handles.axesPlot);
+    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+    hold on;
+    plot(tree_counter(ind_focus,2),tree_counter(ind_focus,3),'og');
+    
 
-
+[handles, ~] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+        tree_counter(ind_focus,2));
 
 
 % 
@@ -358,8 +376,12 @@ end;
 %     end
 % end
 
+if ROI_flag
+    [handles] = setParams(handles,'ROI',curROI);
+end
 
-if strcmpi(options,'save')
+
+if strcmpi(save_flag,'save')
     [handles,data] = ACQUIRE_scan(handles,'save'); %Acquire a scan
     %             [particle_type] = getParams(handles,'ParticleType');
     %             [minSize] = getParams(handles,'MinHist');
@@ -367,8 +389,6 @@ if strcmpi(options,'save')
     
     particle_count = max_focus;
     
-    %             [particle_count,ParticleData] = spd_automated(handles,data,particle_type,minSize,maxSize); %Detect particles
-    %             disp(['Full FOV - ' particle_type ' Particles found: ' num2str(particle_count)]);
     
     output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
 else
@@ -378,7 +398,7 @@ else
     output.focus_plane = tree_counter(ind_focus,2);
     output.numLoop = numLoop;
 end
-tt12 = toc(tt11);
+
 %         [handles] = LEDS_setState(handles,'vacuumoff');
 %[tt2 tt4 tt6 tt8 tt10 tt12]
 

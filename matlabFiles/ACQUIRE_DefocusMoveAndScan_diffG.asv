@@ -16,20 +16,17 @@ a4 = toc(a3);
 a5 = tic();
 
 % I=data;
-imscale=1.5;
 
-I=imresize(data,imscale,'bilinear');
+I=imresize(data,1.5,'bilinear');
 
 s1=1;
-s2=3;
+s2=6;
 
-kernel=15;
-
-G1 = fspecial('gaussian',[kernel,kernel],s1);
-G2= fspecial('gaussian',[kernel,kernel],s2);
+G1 = fspecial('gaussian',[15,15],s1);
+G2= fspecial('gaussian',[15,15],s2);
 %# Filter it
-Ig = imfilter(I,G1,'replicate');
-Ig2=imfilter(I,G2,'replicate');
+Ig = imfilter(I,G1,'same');
+Ig2=imfilter(I,G2,'same');
 IgDiff=Ig-Ig2;
 % IgDiffPos=IgDiff;
 % IgDiffPos(IgDiffPos(:)<0)=0;
@@ -37,7 +34,7 @@ IgDiff=Ig-Ig2;
 % IgDiffNeg=IgDiff;
 % IgDiffNeg(IgDiffNeg(:)>0)=0;
 IgDiffAbs=abs(IgDiff);
-output=sum(sum(IgDiffAbs(1+kernel:end-kernel,1+kernel:end-kernel)));
+output=sum(IgDiffAbs(:));
 
 
 

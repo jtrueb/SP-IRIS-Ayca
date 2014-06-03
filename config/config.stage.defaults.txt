@@ -1,2 +1,2 @@
-virtual:COM0
+mmc_pollux_hybrid:COM4
 

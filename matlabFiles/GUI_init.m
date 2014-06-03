@@ -184,7 +184,7 @@ elseif strcmpi(instrument,'SP-IRIS2')
     LogoPos_v2 = [2700 -16000 250]; %[X Y Z]
 elseif strcmpi(instrument,'HYBRID')
     zMin = -5000;
-    zMax = 1500;
+    zMax = 1700;
     yMin = 0;
     yMax = 10000;
     xMin = 0;
@@ -197,7 +197,7 @@ elseif strcmpi(instrument,'HYBRID')
     NA = 0.8;
     
     backlash = [0,0]; %[X Y]
-    HomePos = [3500,2000,1000]; %[X Y Z]
+    HomePos = [5435,3090,1569.6]; %[X Y Z]5550
     %LoadPos = [0 25000 5000]; %[X Y Z]
     LoadPos = [10000 10000 -5000]; %[X Y Z]
     LogoPos_v1 = [0,0, 250]; %[X Y Z]

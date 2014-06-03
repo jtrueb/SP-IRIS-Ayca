@@ -49,7 +49,7 @@ if ischar(options)
         %Take frame and plot intensity histogram
         capture_mode = 1;
         histInt_flag = 1;
-        analyze_flag = 1;
+%         analyze_flag = 1;
 
     elseif strcmpi(options,'Size')
         %Take frame and plot size histogram

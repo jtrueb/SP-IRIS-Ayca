@@ -16,7 +16,7 @@ msg = 'Focusing'; feedbackLvl = 1; errorFlag = 0;
 % [handles,output] = ACQUIRE_DefocusScan_binarysearch_diffG(handles,0,1,0,'focus',33);
 a=tic;
 % [handles,output] = ACQUIRE_autofocus_dynamic(handles,0,1,0,'focus',25,1);
-[handles,output] = ACQUIRE_autofocus_dynamic_v2(handles,1,0,'max',0,'focus',25,0);
+[handles,output] = ACQUIRE_autofocus_dynamic_v2(handles,1,0,'first',0,'focus',25,1);
 
 toc(a);
 

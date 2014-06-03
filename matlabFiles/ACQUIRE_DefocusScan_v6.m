@@ -6,8 +6,8 @@ function [handles,output] = ACQUIRE_DefocusScan_v6(handles,enableFocus,numLoop,z
 
 if getParams(handles,'ChipLoadStatus') %Is a sample loaded?
     if getParams(handles,'StageInitStatus') %Are the stages initialized?       
-        sweepMin = -1.5;
-        sweepMax = 1.5;
+        sweepMin = -1;
+        sweepMax = 1;
         sweepStep = 0.1;
         sweep = sweepMin:sweepStep:sweepMax;
         sweepSize = size(sweep,2);

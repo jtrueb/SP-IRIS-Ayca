@@ -1,0 +1,1036 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>ACQUIRE_autofocus_dynamic</title><meta name="generator" content="MATLAB 8.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-06-03"><meta name="DC.source" content="ACQUIRE_autofocus_dynamic.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#3">Move stage</a></li><li><a href="#4">Focus</a></li><li><a href="#6">acquire 200nm resolution data point</a></li><li><a href="#9">FIND PEAK</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> [handles,output] = ACQUIRE_autofocus_dynamic(handles,enableFocus,numLoop,z_init,options,scan_width,ROI_flag,tree_counter,direction)
+<span class="comment">%enableFocus = 1 % turns on high pass filter fous</span>
+<span class="comment">%numloop=double   % tracks recursive iteration</span>
+<span class="comment">%z_init = starting position</span>
+<span class="comment">%options = 'save' or 'focus,' 'save' takes a full ROI image upon completion</span>
+<span class="comment">%scan_width = number of steps in scan. must be a factor of 4n+1, where n is</span>
+        <span class="comment">%good defaults are 17,25,33</span>
+<span class="comment">%ROI_flag = 1 reduces focus FOV to 1/4 of full for increased speed</span>
+
+peak_gap_floor=2;
+peak_gap_ceil=1;
+ maxLoop = 6;
+secondary_flag=0;
+
+<span class="keyword">if</span> nargin&lt;9
+    direction=1;
+<span class="keyword">end</span>
+<span class="keyword">if</span> nargin &lt;8
+    tree_counter=[];
+    tree_counter_flag=0;
+<span class="keyword">else</span>
+    tree_counter_flag=1;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin&lt;7
+    ROI_flag=0;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin&lt;6
+    scan_width=45; <span class="comment">%must be a factor of 4n+1, where n is even</span>
+<span class="keyword">end</span>
+
+
+
+<span class="comment">%reset scan_w&yacute;dth to insure integer indices</span>
+half_scan=fix(scan_width/2);
+scan_width=2*half_scan+1;
+step_size=.1;
+
+
+<span class="keyword">if</span> nargin&lt;5;
+    options = <span class="string">'save'</span>;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> getParams(handles,<span class="string">'ChipLoadStatus'</span>) <span class="comment">%Is a sample loaded?</span>
+    <span class="keyword">if</span> getParams(handles,<span class="string">'StageInitStatus'</span>) <span class="comment">%Are the stages initialized?</span>
+</pre><pre class="codeinput"><span class="comment">% [handles] = LEDS_setState(handles,'vacuumon');</span>
+tt1 = tic();
+
+
+        [smart_flag] = getParams(handles,<span class="string">'SmartMove'</span>);
+        [root_name] = [getParams(handles,<span class="string">'Directory'</span>) getParams(handles,<span class="string">'ChipID'</span>)];
+        [zAxes] = {handles.Stage.axis.z};
+
+        stages = getParams(handles,<span class="string">'StagePointers'</span>);
+        init_offset = getParams(handles,<span class="string">'ParticleOffset'</span>); <span class="comment">%should be 0 for virus</span>
+
+        z_temp = getParams(handles,<span class="string">'ZPos'</span>);
+
+        <span class="keyword">if</span> z_init &lt;=0
+            z_init = z_temp;
+        <span class="keyword">end</span>
+</pre><h2>Move stage<a name="3"></a></h2><pre class="codeinput">        <span class="keyword">if</span> smart_flag
+            output.Z_plane = getParams(handles,<span class="string">'ZPos'</span>);
+        <span class="keyword">end</span>
+</pre><h2>Focus<a name="4"></a></h2><pre class="codeinput">        <span class="keyword">if</span> enableFocus
+            [handles val] = FOCUS_Image(handles,0,1,1,0); <span class="comment">%Update Z</span>
+            z_init = getParams(handles,<span class="string">'ZPos'</span>);
+            [handles] = STAGE_MoveAbsolute(handles,{stages.axis.z},z_init+init_offset);
+        <span class="keyword">end</span>
+
+
+<span class="comment">%         z_pos = z_temp + sweepMin - sweepStep;</span>
+
+
+
+        curROI = getParams(handles,<span class="string">'ROI'</span>);
+
+        <span class="comment">%%%%%%%%%%%%%%%%%Crop image for focusing%%%%%%%%%%%%%%%%%%%</span>
+        <span class="comment">%%%%%How large a slice?</span>
+        <span class="comment">%1/16 the FOV</span>
+        newSize = [curROI(3) curROI(4)]./4;<span class="comment">%Height/Width</span>
+        <span class="comment">%1/4 the FOV</span>
+<span class="comment">%         newSize = [curROI(3) curROI(4)]./2;%Height/Width</span>
+
+        <span class="comment">%%%%%Center on what area?</span>
+        <span class="comment">%The center</span>
+        newOffset = [curROI(1) curROI(2)] + 1.5.*newSize;
+
+        <span class="comment">%The UR</span>
+<span class="comment">%         newOffset = [0 curROI(4)-newSize(2)];</span>
+
+        <span class="comment">%The BL</span>
+<span class="comment">%         newOffset = [curROI(3)-newSize(1) 0];</span>
+
+        <span class="comment">%%%%%Store new ROI</span>
+        newROI = [newOffset newSize];
+
+        <span class="keyword">if</span> ROI_flag
+            [handles] = setParams(handles,<span class="string">'ROI'</span>,newROI);
+        <span class="keyword">end</span>
+        <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+        <span class="comment">%new code starts</span>
+        <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+
+
+        <span class="keyword">if</span> tree_counter_flag <span class="comment">%if recursively called, append old tree_counter to new one,</span>
+            tree_counter_prev=tree_counter;
+            tree_counter=[];
+            <span class="keyword">if</span> direction==1
+<span class="comment">%                 tree_lowbound=tree_counter_prev(end,2)+step_size;</span>
+                start_ind=tree_counter_prev(end,1)+4;
+
+
+                tree_counter(1:scan_width-1,1:3)=-1;                                          <span class="comment">%Initialize all columns to -1 (column 3 for image power)</span>
+                tree_counter(1:scan_width-1,1)=(1:(scan_width-1))+tree_counter_prev(end,1);                                          <span class="comment">%Column 1 set to z index</span>
+                tree_counter(1:scan_width-1,2)=tree_counter_prev(end,2)+(1:scan_width-1)*step_size;     <span class="comment">%Column 2 set to z position (nominal)</span>
+                tree_counter=[tree_counter_prev;tree_counter];
+<span class="comment">%                 scan_width=size(tree_counter,1);</span>
+
+                end_ind=tree_counter(end,1);
+            <span class="keyword">elseif</span> direction==-1;
+                start_ind=1;
+
+                tree_counter(1:scan_width-1,1:3)=-1;                                          <span class="comment">%Initialize all columns to -1 (column 3 for image power)</span>
+
+                tree_counter(1:scan_width-1,2)=((1:scan_width-1)*step_size)+tree_counter_prev(1,2)-scan_width*step_size;     <span class="comment">%Column 2 set to z position (nominal)</span>
+                end_ind=scan_width-4;
+
+                tree_counter=[tree_counter;tree_counter_prev];
+                 tree_counter(1:end,1)=1:size(tree_counter,1);
+<span class="comment">%                 scan_width=size(tree_counter,1);</span>
+
+            <span class="keyword">end</span>
+
+        <span class="keyword">else</span>
+            start_ind=1;
+            end_ind=scan_width;
+            tree_lowbound = z_temp-(half_scan*step_size);
+
+
+            tree_counter(1:scan_width,1:3)=-1;                                          <span class="comment">%Initialize all columns to -1 (column 3 for image power)</span>
+            tree_counter(1:scan_width,1)=1:scan_width;                                          <span class="comment">%Column 1 set to z index</span>
+            tree_counter(1:scan_width,2)=tree_lowbound+(tree_counter(1:scan_width,1)-1)*.1;     <span class="comment">%Column 2 set to z position (nominal)</span>
+        <span class="keyword">end</span>
+
+        tt2 = toc(tt1);
+        tt3 = tic();
+        istart=tic;
+        <span class="keyword">for</span> m=start_ind:4:end_ind
+            <span class="keyword">if</span> FLAG_StopBtn(<span class="string">'check'</span>)
+<span class="comment">%                 FLAG_StopBtn('clear');</span>
+                [handles] = CONTROL_WelcomeBtns(handles, 5);
+
+                msg = <span class="string">'Stopped by user'</span>; feedbackLvl = 1; errorFlag = 1;
+                [handles] = GUI_logMsg(handles,msg,handles.const.log.instrument,<span class="keyword">...</span>
+                    handles.txtLog,feedbackLvl,errorFlag);
+
+
+                output = [];
+
+                <span class="comment">%Revert ROI</span>
+                [handles] = STAGE_MoveAbsolute(handles,zAxes,z_temp);
+                <span class="keyword">if</span> ROI_flag
+                    [handles] = setParams(handles,<span class="string">'ROI'</span>,curROI);
+                <span class="keyword">end</span>
+                <span class="keyword">return</span>;
+            <span class="keyword">end</span>
+
+            [handles, tree_counter(m,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(m,2));
+
+             set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+             cla(handles.axesPlot);
+             plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+        <span class="keyword">end</span>
+
+        [max_coarse,ind_coarse] = max(tree_counter(:,3));
+
+
+
+
+
+
+
+tt4 = toc(tt3);
+        tt5 = tic();
+        <span class="keyword">if</span> (ind_coarse==tree_counter(1,1))  || ((tree_counter(ind_coarse,2)-tree_counter(1,2))&lt;peak_gap_floor)
+
+            <span class="comment">%extend tree counter by scan_length for lower z-positions</span>
+
+
+
+           <span class="comment">%r-center scan range on max wing and scan again</span>
+<span class="comment">%            [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(5,2)-half_scan*step_size);</span>
+           [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_coarse,2));
+           <span class="keyword">if</span> numLoop &lt; maxLoop
+               <span class="keyword">if</span> ROI_flag
+                   [handles] = setParams(handles,<span class="string">'ROI'</span>,curROI);
+               <span class="keyword">end</span>
+               [handles,output] = ACQUIRE_autofocus_dynamic(handles,0,numLoop+1,z_init,options,scan_width,ROI_flag,tree_counter,-1);
+               <span class="keyword">return</span>;
+           <span class="keyword">else</span>
+               data=[];
+               particle_count=-1;
+               offset=tree_counter(ind_coarse,2)-z_init;
+            output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
+            <span class="keyword">return</span>;
+           <span class="keyword">end</span>
+        <span class="keyword">elseif</span> (ind_coarse==tree_counter(end,1)) || (abs(tree_counter(end,2)-tree_counter(ind_coarse,2))&lt;peak_gap_ceil)
+            <span class="comment">%             [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_coarse,2));</span>
+<span class="comment">%             [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(end-4,2)+half_scan*step_size);</span>
+            <span class="keyword">if</span> numLoop &lt; maxLoop
+                <span class="keyword">if</span> ROI_flag
+                    [handles] = setParams(handles,<span class="string">'ROI'</span>,curROI);
+                <span class="keyword">end</span>
+                [handles,output] = ACQUIRE_autofocus_dynamic(handles,0,numLoop+1,z_init,options,scan_width,ROI_flag,tree_counter,1);
+                <span class="keyword">return</span>;
+            <span class="keyword">else</span>
+                data=[];
+                particle_count=-1;
+                offset=tree_counter(ind_coarse,2)-z_init;
+                output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
+                disp([<span class="string">'Maximum Number of loops reached, focus not found.'</span>]);
+                <span class="keyword">return</span>;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>;
+
+        <span class="comment">%%look for secondary local maxima</span>
+
+        <span class="comment">%generate mask for filled in points</span>
+
+        measured_mask=tree_counter(:,3)&gt;0;
+        full_inds=tree_counter(measured_mask,1);
+        [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+        <span class="keyword">if</span> length(imax)&gt;=2 <span class="comment">%multiple peaks detected</span>
+            <span class="keyword">if</span> imax(1)&lt;imax(2) <span class="comment">%particle peak is detected</span>
+
+
+
+            <span class="keyword">else</span>  <span class="comment">%secondary peak is overpowering particle peak, fill in gaps on particle peak</span>
+                ind_span=full_inds(imax(1))-full_inds(imax(2));
+                half_span=ceil(ind_span/2);
+                z_span=tree_counter(full_inds(imax(1)),2)-tree_counter(full_inds(imax(2)),2);
+                ind_second=full_inds(imax(2));
+                <span class="keyword">if</span> z_span &gt;=peak_gap_floor  <span class="comment">%if secondary peak is too far away, ignore it</span>
+                    ind_coarse=imax(1);
+                <span class="keyword">else</span>
+</pre><pre class="codeinput">                    secondary_flag=1;
+</pre><h2>acquire 200nm resolution data point<a name="6"></a></h2><pre class="codeinput">                    [handles, tree_counter(ind_second-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                        tree_counter(ind_second-2,2));
+
+                    set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+                    <span class="comment">%both directions for med</span>
+                    [handles, tree_counter(ind_second+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                        tree_counter(ind_second+2,2));
+
+                    set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+                    tt6 = toc(tt5);
+                    tt7 = tic();
+                    <span class="comment">% FIND PEAK</span>
+                     measured_mask=tree_counter(:,3)&gt;0;
+                    full_inds=tree_counter(measured_mask,1);
+                    [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+                    <span class="keyword">if</span> length(imax)&gt;=2 <span class="comment">%if half_span is too big, could pick up on beginning of secondary peak.  fill inlater</span>
+
+                    <span class="keyword">end</span>
+
+
+                    <span class="keyword">if</span> full_inds(imax(1))==ind_coarse
+                        ind_second_med=full_inds(imax(2));
+                    <span class="keyword">else</span>
+                        ind_second_med=full_inds(imax(1));
+                    <span class="keyword">end</span>
+
+
+                    <span class="comment">% acquire 100nm resolution data points</span>
+                    [handles, tree_counter(ind_second_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                        tree_counter(ind_second_med-1,2));
+
+                    set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+                    <span class="comment">%do both direction for fine</span>
+                    [handles, tree_counter(ind_second_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                        tree_counter(ind_second_med+1,2));
+
+                    set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+                    <span class="comment">%Check to ensure fine max is bounded by 100nm increment values.</span>
+                    <span class="comment">%if the either neighboring index to the fine max is unfilled, take</span>
+                    <span class="comment">%the image before smoothing</span>
+                    <span class="comment">% FIND PEAK</span>
+                    measured_mask=tree_counter(:,3)&gt;0;
+                    full_inds=tree_counter(measured_mask,1);
+
+                    [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+
+                     <span class="keyword">if</span> full_inds(imax(1))==ind_coarse
+                        ind_second_fine=full_inds(imax(2));
+                    <span class="keyword">else</span>
+                        ind_second_fine=full_inds(imax(1));
+                    <span class="keyword">end</span>
+
+                    <span class="keyword">if</span> tree_counter(ind_second_fine-1,3)&lt;0
+                        [handles, tree_counter(ind_second_fine-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                            tree_counter(ind_second_fine-1,2));
+                    <span class="keyword">end</span>
+
+                    <span class="keyword">if</span> tree_counter(ind_second_fine+1,3)&lt;0
+                        [handles, tree_counter(ind_second_fine+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                            tree_counter(ind_second_fine+1,2));
+                    <span class="keyword">end</span>
+</pre><pre class="codeinput">                <span class="keyword">end</span>
+
+            <span class="keyword">end</span>
+        <span class="keyword">else</span> <span class="comment">%only 1 peak detected</span>
+
+        <span class="keyword">end</span>
+
+<span class="keyword">if</span> ~secondary_flag
+</pre><pre class="codeinput">        <span class="comment">% acquire 200nm resolution data point</span>
+        [handles, tree_counter(ind_coarse-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(ind_coarse-2,2));
+
+         set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+        <span class="comment">%both directions for med</span>
+        [handles, tree_counter(ind_coarse+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(ind_coarse+2,2));
+
+         set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+         tt6 = toc(tt5);
+         tt7 = tic();
+</pre><h2>FIND PEAK<a name="9"></a></h2><pre class="codeinput">        [max_med,ind_med] = max(tree_counter(:,3));
+
+
+        <span class="comment">% acquire 100nm resolution data points</span>
+        [handles, tree_counter(ind_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(ind_med-1,2));
+
+         set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+        <span class="comment">%do both direction for fine</span>
+        [handles, tree_counter(ind_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(ind_med+1,2));
+
+         set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+
+         <span class="comment">%Check to ensure fine max is bounded by 100nm increment values.</span>
+         <span class="comment">%if the either neighboring index to the fine max is unfilled, take</span>
+         <span class="comment">%the image before smoothing</span>
+         [max_fine,ind_fine] = max(tree_counter(:,3));
+
+         <span class="keyword">if</span> tree_counter(ind_fine-1,3)&lt;0
+             [handles, tree_counter(ind_fine-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(ind_fine-1,2));
+         <span class="keyword">end</span>
+
+         <span class="keyword">if</span> tree_counter(ind_fine+1,3)&lt;0
+             [handles, tree_counter(ind_fine+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,<span class="keyword">...</span>
+                tree_counter(ind_fine+1,2));
+         <span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">end</span>
+
+
+
+
+        <span class="comment">%%identify focal plane</span>
+        count_condensed=tree_counter(tree_counter(:,3)&gt;0,:);
+        count_smooth=count_condensed;
+        <span class="keyword">for</span> i=1:size(count_condensed,1)
+            <span class="keyword">if</span> i==1
+                count_smooth(i,3)=mean(count_condensed(i:i+1,3));
+            <span class="keyword">elseif</span> i==size(count_condensed,1)
+                count_smooth(i,3)=mean(count_condensed(i-1:i,3));
+            <span class="keyword">else</span>
+                count_smooth(i,3)=mean(count_condensed(i-1:i+1,3));
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+
+
+        tt8 = toc(tt7);
+        tt9 = tic();
+
+        [max_focus,smooth_focus]=max(count_smooth(:,3));
+        ind_focus=count_smooth(smooth_focus,1);
+
+        <span class="comment">%%hack for secondary peak</span>
+        <span class="keyword">if</span> secondary_flag
+            ind_focus=ind_second_fine;
+            disp(<span class="string">'Secondary Peak Detected!'</span>);
+        <span class="keyword">else</span>
+            disp(<span class="string">'Primary Peak Detected'</span>);
+        <span class="keyword">end</span>
+
+        disp([<span class="string">'Max Power: '</span> num2str(max_focus)]);
+
+        set(gcf,<span class="string">'CurrentAxes'</span>,handles.axesPlot); <span class="comment">%point to plot axes</span>
+        cla(handles.axesPlot);
+        plot(tree_counter(tree_counter(:,3)&gt;0,2),tree_counter(tree_counter(:,3)&gt;0,3),<span class="string">'-ob'</span>);
+        hold <span class="string">on</span>;
+        plot(count_smooth(:,2),count_smooth(:,3),<span class="string">'-r'</span>);
+
+        <span class="keyword">if</span> secondary_flag
+            plot(tree_counter(ind_focus,2),tree_counter(ind_focus,3),<span class="string">'dg'</span>);
+        <span class="keyword">else</span>
+            plot(count_condensed(smooth_focus,2),count_condensed(smooth_focus,3),<span class="string">'dg'</span>);
+        <span class="keyword">end</span>
+
+        hold <span class="string">off</span>;
+
+
+        [offset] = tree_counter(ind_focus,2) - z_init;
+        disp([<span class="string">'Focus offset: '</span> num2str(offset)]);
+        [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_focus,2));
+
+        <span class="keyword">if</span> ROI_flag
+            [handles] = setParams(handles,<span class="string">'ROI'</span>,curROI);
+        <span class="keyword">end</span>
+
+        tt10 = toc(tt9);
+        tt11 = tic();
+        <span class="keyword">if</span> strcmpi(options,<span class="string">'save'</span>)
+            [handles,data] = ACQUIRE_scan(handles,<span class="string">'save'</span>); <span class="comment">%Acquire a scan</span>
+<span class="comment">%             [particle_type] = getParams(handles,'ParticleType');</span>
+<span class="comment">%             [minSize] = getParams(handles,'MinHist');</span>
+<span class="comment">%             [maxSize] = getParams(handles,'MaxHist');</span>
+
+            particle_count = max_focus;
+
+<span class="comment">%             [particle_count,ParticleData] = spd_automated(handles,data,particle_type,minSize,maxSize); %Detect particles</span>
+<span class="comment">%             disp(['Full FOV - ' particle_type ' Particles found: ' num2str(particle_count)]);</span>
+
+            output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
+        <span class="keyword">else</span>
+            [handles,data] = ACQUIRE_scan(handles,<span class="string">'take'</span>); <span class="comment">%Acquire a scan</span>
+            output=[];
+            output.ROI_count = tree_counter(ind_focus,3);
+            output.focus_plane = tree_counter(ind_focus,2);
+            output.numLoop = numLoop;
+        <span class="keyword">end</span>
+        tt12 = toc(tt11);
+<span class="comment">%         [handles] = LEDS_setState(handles,'vacuumoff');</span>
+        <span class="comment">%[tt2 tt4 tt6 tt8 tt10 tt12]</span>
+</pre><pre class="codeinput">    <span class="keyword">else</span>
+        msg = <span class="string">'Stages are not initialized'</span>; feedbackLvl = 1; errorFlag = 1;
+        [handles] = GUI_logMsg(handles,msg,handles.const.log.instrument,<span class="keyword">...</span>
+            handles.txtLog,feedbackLvl,errorFlag);
+    <span class="keyword">end</span>
+<span class="keyword">else</span>
+    msg = <span class="string">'No sample loaded'</span>; feedbackLvl = 1; errorFlag = 1;
+    [handles] = GUI_logMsg(handles,msg,handles.const.log.instrument,<span class="keyword">...</span>
+        handles.txtLog,feedbackLvl,errorFlag);
+<span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">Error using ACQUIRE_autofocus_dynamic (line 45)
+Not enough input arguments.
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [handles,output] = ACQUIRE_autofocus_dynamic(handles,enableFocus,numLoop,z_init,options,scan_width,ROI_flag,tree_counter,direction)
+%enableFocus = 1 % turns on high pass filter fous
+%numloop=double   % tracks recursive iteration
+%z_init = starting position
+%options = 'save' or 'focus,' 'save' takes a full ROI image upon completion
+%scan_width = number of steps in scan. must be a factor of 4n+1, where n is
+        %good defaults are 17,25,33
+%ROI_flag = 1 reduces focus FOV to 1/4 of full for increased speed
+
+peak_gap_floor=2;
+peak_gap_ceil=1;
+ maxLoop = 6;
+secondary_flag=0;
+
+if nargin<9
+    direction=1;
+end
+if nargin <8
+    tree_counter=[];
+    tree_counter_flag=0;
+else
+    tree_counter_flag=1;
+end
+
+if nargin<7
+    ROI_flag=0;
+end
+
+if nargin<6
+    scan_width=45; %must be a factor of 4n+1, where n is even
+end
+
+
+
+%reset scan_wýdth to insure integer indices
+half_scan=fix(scan_width/2);
+scan_width=2*half_scan+1;
+step_size=.1;
+
+
+if nargin<5;
+    options = 'save';
+end
+
+if getParams(handles,'ChipLoadStatus') %Is a sample loaded?
+    if getParams(handles,'StageInitStatus') %Are the stages initialized?
+
+% [handles] = LEDS_setState(handles,'vacuumon');
+tt1 = tic();
+       
+
+        [smart_flag] = getParams(handles,'SmartMove');
+        [root_name] = [getParams(handles,'Directory') getParams(handles,'ChipID')];
+        [zAxes] = {handles.Stage.axis.z};
+
+        stages = getParams(handles,'StagePointers');
+        init_offset = getParams(handles,'ParticleOffset'); %should be 0 for virus
+        
+        z_temp = getParams(handles,'ZPos');
+        
+        if z_init <=0
+            z_init = z_temp;
+        end
+        
+        %% Move stage
+        if smart_flag
+            output.Z_plane = getParams(handles,'ZPos');
+        end
+        
+        %% Focus
+        if enableFocus
+            [handles val] = FOCUS_Image(handles,0,1,1,0); %Update Z
+            z_init = getParams(handles,'ZPos');
+            [handles] = STAGE_MoveAbsolute(handles,{stages.axis.z},z_init+init_offset);
+        end
+        
+        
+%         z_pos = z_temp + sweepMin - sweepStep;
+        
+       
+        
+        curROI = getParams(handles,'ROI');
+        
+        %%%%%%%%%%%%%%%%%Crop image for focusing%%%%%%%%%%%%%%%%%%%
+        %%%%%How large a slice?        
+        %1/16 the FOV
+        newSize = [curROI(3) curROI(4)]./4;%Height/Width        
+        %1/4 the FOV
+%         newSize = [curROI(3) curROI(4)]./2;%Height/Width    
+            
+        %%%%%Center on what area?
+        %The center 
+        newOffset = [curROI(1) curROI(2)] + 1.5.*newSize;
+                
+        %The UR
+%         newOffset = [0 curROI(4)-newSize(2)];
+
+        %The BL
+%         newOffset = [curROI(3)-newSize(1) 0];
+
+        %%%%%Store new ROI
+        newROI = [newOffset newSize];
+        
+        if ROI_flag
+            [handles] = setParams(handles,'ROI',newROI);
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %new code starts
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        
+        if tree_counter_flag %if recursively called, append old tree_counter to new one,
+            tree_counter_prev=tree_counter;
+            tree_counter=[];
+            if direction==1
+%                 tree_lowbound=tree_counter_prev(end,2)+step_size;
+                start_ind=tree_counter_prev(end,1)+4;
+                
+                
+                tree_counter(1:scan_width-1,1:3)=-1;                                          %Initialize all columns to -1 (column 3 for image power)
+                tree_counter(1:scan_width-1,1)=(1:(scan_width-1))+tree_counter_prev(end,1);                                          %Column 1 set to z index
+                tree_counter(1:scan_width-1,2)=tree_counter_prev(end,2)+(1:scan_width-1)*step_size;     %Column 2 set to z position (nominal)
+                tree_counter=[tree_counter_prev;tree_counter];
+%                 scan_width=size(tree_counter,1);
+                
+                end_ind=tree_counter(end,1);
+            elseif direction==-1;
+                start_ind=1;
+                
+                tree_counter(1:scan_width-1,1:3)=-1;                                          %Initialize all columns to -1 (column 3 for image power)
+                
+                tree_counter(1:scan_width-1,2)=((1:scan_width-1)*step_size)+tree_counter_prev(1,2)-scan_width*step_size;     %Column 2 set to z position (nominal)
+                end_ind=scan_width-4;
+            
+                tree_counter=[tree_counter;tree_counter_prev];
+                 tree_counter(1:end,1)=1:size(tree_counter,1);
+%                 scan_width=size(tree_counter,1);
+                
+            end
+            
+        else
+            start_ind=1;
+            end_ind=scan_width;
+            tree_lowbound = z_temp-(half_scan*step_size);
+            
+            
+            tree_counter(1:scan_width,1:3)=-1;                                          %Initialize all columns to -1 (column 3 for image power)
+            tree_counter(1:scan_width,1)=1:scan_width;                                          %Column 1 set to z index
+            tree_counter(1:scan_width,2)=tree_lowbound+(tree_counter(1:scan_width,1)-1)*.1;     %Column 2 set to z position (nominal)
+        end
+        
+        tt2 = toc(tt1);
+        tt3 = tic();
+        istart=tic;
+        for m=start_ind:4:end_ind
+            if FLAG_StopBtn('check')
+%                 FLAG_StopBtn('clear');
+                [handles] = CONTROL_WelcomeBtns(handles, 5);
+                
+                msg = 'Stopped by user'; feedbackLvl = 1; errorFlag = 1;
+                [handles] = GUI_logMsg(handles,msg,handles.const.log.instrument,...
+                    handles.txtLog,feedbackLvl,errorFlag);
+                
+                
+                output = [];
+                
+                %Revert ROI
+                [handles] = STAGE_MoveAbsolute(handles,zAxes,z_temp);
+                if ROI_flag
+                    [handles] = setParams(handles,'ROI',curROI);
+                end
+                return;
+            end
+            
+            [handles, tree_counter(m,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(m,2));
+            
+             set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+             cla(handles.axesPlot);
+             plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+        end
+        
+        [max_coarse,ind_coarse] = max(tree_counter(:,3));
+        
+        
+        
+        
+        
+        
+        
+tt4 = toc(tt3);
+        tt5 = tic();
+        if (ind_coarse==tree_counter(1,1))  || ((tree_counter(ind_coarse,2)-tree_counter(1,2))<peak_gap_floor)
+            
+            %extend tree counter by scan_length for lower z-positions
+            
+            
+            
+           %r-center scan range on max wing and scan again   
+%            [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(5,2)-half_scan*step_size);
+           [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_coarse,2));
+           if numLoop < maxLoop
+               if ROI_flag
+                   [handles] = setParams(handles,'ROI',curROI);
+               end
+               [handles,output] = ACQUIRE_autofocus_dynamic(handles,0,numLoop+1,z_init,options,scan_width,ROI_flag,tree_counter,-1);
+               return;
+           else
+               data=[];
+               particle_count=-1;
+               offset=tree_counter(ind_coarse,2)-z_init;
+            output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
+            return;
+           end
+        elseif (ind_coarse==tree_counter(end,1)) || (abs(tree_counter(end,2)-tree_counter(ind_coarse,2))<peak_gap_ceil)
+            %             [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_coarse,2));
+%             [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(end-4,2)+half_scan*step_size);
+            if numLoop < maxLoop
+                if ROI_flag
+                    [handles] = setParams(handles,'ROI',curROI);
+                end
+                [handles,output] = ACQUIRE_autofocus_dynamic(handles,0,numLoop+1,z_init,options,scan_width,ROI_flag,tree_counter,1);
+                return;
+            else
+                data=[];
+                particle_count=-1;
+                offset=tree_counter(ind_coarse,2)-z_init;
+                output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
+                disp(['Maximum Number of loops reached, focus not found.']);
+                return;
+            end
+        end;
+        
+        %%look for secondary local maxima
+        
+        %generate mask for filled in points
+        
+        measured_mask=tree_counter(:,3)>0;
+        full_inds=tree_counter(measured_mask,1);
+        [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+        if length(imax)>=2 %multiple peaks detected
+            if imax(1)<imax(2) %particle peak is detected
+                
+               
+                
+            else  %secondary peak is overpowering particle peak, fill in gaps on particle peak
+                ind_span=full_inds(imax(1))-full_inds(imax(2));
+                half_span=ceil(ind_span/2);
+                z_span=tree_counter(full_inds(imax(1)),2)-tree_counter(full_inds(imax(2)),2);
+                ind_second=full_inds(imax(2));
+                if z_span >=peak_gap_floor  %if secondary peak is too far away, ignore it
+                    ind_coarse=imax(1);
+                else
+                    secondary_flag=1;
+                    %% acquire 200nm resolution data point
+                    [handles, tree_counter(ind_second-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                        tree_counter(ind_second-2,2));
+                    
+                    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+                    
+                    %both directions for med
+                    [handles, tree_counter(ind_second+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                        tree_counter(ind_second+2,2));
+                    
+                    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+                    
+                    tt6 = toc(tt5);
+                    tt7 = tic();
+                    % FIND PEAK
+                     measured_mask=tree_counter(:,3)>0;
+                    full_inds=tree_counter(measured_mask,1);
+                    [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+                    if length(imax)>=2 %if half_span is too big, could pick up on beginning of secondary peak.  fill inlater
+                    
+                    end
+                   
+                    
+                    if full_inds(imax(1))==ind_coarse
+                        ind_second_med=full_inds(imax(2));
+                    else
+                        ind_second_med=full_inds(imax(1));
+                    end
+                    
+                    
+                    % acquire 100nm resolution data points
+                    [handles, tree_counter(ind_second_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                        tree_counter(ind_second_med-1,2));
+                    
+                    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+                    
+                    %do both direction for fine
+                    [handles, tree_counter(ind_second_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                        tree_counter(ind_second_med+1,2));
+                    
+                    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+                    cla(handles.axesPlot);
+                    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+                    
+                    %Check to ensure fine max is bounded by 100nm increment values.
+                    %if the either neighboring index to the fine max is unfilled, take
+                    %the image before smoothing
+                    % FIND PEAK
+                    measured_mask=tree_counter(:,3)>0;
+                    full_inds=tree_counter(measured_mask,1);
+                    
+                    [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+                    
+                     if full_inds(imax(1))==ind_coarse
+                        ind_second_fine=full_inds(imax(2));
+                    else
+                        ind_second_fine=full_inds(imax(1));
+                    end
+                    
+                    if tree_counter(ind_second_fine-1,3)<0
+                        [handles, tree_counter(ind_second_fine-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                            tree_counter(ind_second_fine-1,2));
+                    end
+                    
+                    if tree_counter(ind_second_fine+1,3)<0
+                        [handles, tree_counter(ind_second_fine+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                            tree_counter(ind_second_fine+1,2));
+                    end
+                    
+                    
+                    
+                    
+                end
+                
+            end
+        else %only 1 peak detected
+            
+        end
+        
+if ~secondary_flag
+         
+        
+        % acquire 200nm resolution data point
+        [handles, tree_counter(ind_coarse-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(ind_coarse-2,2));
+            
+         set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+        
+        %both directions for med
+        [handles, tree_counter(ind_coarse+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(ind_coarse+2,2));
+            
+         set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+            
+         tt6 = toc(tt5);
+         tt7 = tic();
+        %% FIND PEAK
+        [max_med,ind_med] = max(tree_counter(:,3));
+        
+        
+        % acquire 100nm resolution data points
+        [handles, tree_counter(ind_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(ind_med-1,2));
+            
+         set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+             
+        %do both direction for fine
+        [handles, tree_counter(ind_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(ind_med+1,2));
+            
+         set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+         cla(handles.axesPlot);
+         plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+         
+         %Check to ensure fine max is bounded by 100nm increment values.
+         %if the either neighboring index to the fine max is unfilled, take
+         %the image before smoothing
+         [max_fine,ind_fine] = max(tree_counter(:,3));
+         
+         if tree_counter(ind_fine-1,3)<0
+             [handles, tree_counter(ind_fine-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(ind_fine-1,2));
+         end
+         
+         if tree_counter(ind_fine+1,3)<0
+             [handles, tree_counter(ind_fine+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+                tree_counter(ind_fine+1,2));
+         end
+         
+end
+        
+                
+         
+                 
+        %%identify focal plane
+        count_condensed=tree_counter(tree_counter(:,3)>0,:);
+        count_smooth=count_condensed;
+        for i=1:size(count_condensed,1)
+            if i==1
+                count_smooth(i,3)=mean(count_condensed(i:i+1,3));
+            elseif i==size(count_condensed,1)
+                count_smooth(i,3)=mean(count_condensed(i-1:i,3));
+            else
+                count_smooth(i,3)=mean(count_condensed(i-1:i+1,3));
+            end
+        end
+        
+        
+        tt8 = toc(tt7);
+        tt9 = tic();
+        
+        [max_focus,smooth_focus]=max(count_smooth(:,3));
+        ind_focus=count_smooth(smooth_focus,1);
+        
+        %%hack for secondary peak
+        if secondary_flag
+            ind_focus=ind_second_fine;
+            disp('Secondary Peak Detected!');
+        else
+            disp('Primary Peak Detected');
+        end
+    
+        disp(['Max Power: ' num2str(max_focus)]);
+        
+        set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+        cla(handles.axesPlot);
+        plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+        hold on;
+        plot(count_smooth(:,2),count_smooth(:,3),'-r');
+        
+        if secondary_flag
+            plot(tree_counter(ind_focus,2),tree_counter(ind_focus,3),'dg');
+        else
+            plot(count_condensed(smooth_focus,2),count_condensed(smooth_focus,3),'dg');
+        end
+        
+        hold off;
+        
+        
+        [offset] = tree_counter(ind_focus,2) - z_init;
+        disp(['Focus offset: ' num2str(offset)]);
+        [handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_focus,2));
+        
+        if ROI_flag
+            [handles] = setParams(handles,'ROI',curROI);
+        end
+        
+        tt10 = toc(tt9);
+        tt11 = tic();
+        if strcmpi(options,'save')
+            [handles,data] = ACQUIRE_scan(handles,'save'); %Acquire a scan
+%             [particle_type] = getParams(handles,'ParticleType');
+%             [minSize] = getParams(handles,'MinHist');
+%             [maxSize] = getParams(handles,'MaxHist');
+            
+            particle_count = max_focus;
+            
+%             [particle_count,ParticleData] = spd_automated(handles,data,particle_type,minSize,maxSize); %Detect particles
+%             disp(['Full FOV - ' particle_type ' Particles found: ' num2str(particle_count)]);
+            
+            output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
+        else
+            [handles,data] = ACQUIRE_scan(handles,'take'); %Acquire a scan
+            output=[];
+            output.ROI_count = tree_counter(ind_focus,3);
+            output.focus_plane = tree_counter(ind_focus,2);
+            output.numLoop = numLoop;
+        end
+        tt12 = toc(tt11);
+%         [handles] = LEDS_setState(handles,'vacuumoff');
+        %[tt2 tt4 tt6 tt8 tt10 tt12]
+        
+    else
+        msg = 'Stages are not initialized'; feedbackLvl = 1; errorFlag = 1;
+        [handles] = GUI_logMsg(handles,msg,handles.const.log.instrument,...
+            handles.txtLog,feedbackLvl,errorFlag);
+    end
+else
+    msg = 'No sample loaded'; feedbackLvl = 1; errorFlag = 1;
+    [handles] = GUI_logMsg(handles,msg,handles.const.log.instrument,...
+        handles.txtLog,feedbackLvl,errorFlag);
+end
+end
+##### SOURCE END #####
+--></body></html>

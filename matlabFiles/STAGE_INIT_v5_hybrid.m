@@ -21,8 +21,8 @@ stages.mmc_portnumber = [];
 stages.communicationType = 'Serial';
 stages.NL = sprintf('\n');
 % stages.axis = struct();
-stages.axis.x = '1';
-stages.axis.y = '3';
+stages.axis.x = '3';
+stages.axis.y = '1';
 stages.axis.z = '9'; %actaually is 1, hack to overcome redundancy with x axis
 % stages.axis.xy = '-3'; %Calculated by [N][M] = -2^(N-1) - 2^(M-1)
 % stages.axis.xz = '-5';

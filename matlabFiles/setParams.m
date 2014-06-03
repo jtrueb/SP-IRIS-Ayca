@@ -752,7 +752,7 @@ elseif strcmpi(parameter,'ZOffset')
 elseif strcmpi(parameter,'ZPos')
     if isfloat(val)
         if ~isfield(handles.Stage,'ZPos')
-            handles.Stage.ZPos = roundn(val,-1);
+            handles.Stage.ZPos = roundn(val,-2);
         end
         ZMax = getParams(handles,'ZMax');
         ZMin = getParams(handles,'ZMin');
@@ -770,7 +770,7 @@ elseif strcmpi(parameter,'ZPos')
         else
             STAGE_move(handles.Stage,{handles.Stage.axis.z},val,...
                 handles.Stage.commands.move_absolute,handles.txtEncoderReadout);
-            handles.Stage.ZPos = roundn(val,-1);
+            handles.Stage.ZPos = roundn(val,-2);
             msg = ['ZPos set - ' num2str(handles.Stage.ZPos)];
         end
         set(handles.editZPos,'String',num2str(handles.Stage.ZPos));

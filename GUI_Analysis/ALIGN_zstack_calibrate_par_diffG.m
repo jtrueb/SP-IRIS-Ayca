@@ -7,8 +7,9 @@ a=tic;
 
 display_figures_flag=1;
 
-
-eff_pixel=.148;  %%eff_pixel = physical pixel size / magnification
+screw_span=1.18; %inches
+tpi=100; %threads per inch
+eff_pixel=.1172;  %%eff_pixel = physical pixel size / magnification
 
 
 
@@ -175,8 +176,7 @@ end
 
 disp('ALIGN - Fitting Alignment Plane...');
 
-screw_span=1.18; %inches
-tpi=100; %threads per inch
+
 
 % [planefit, goodnessoffit] = focus_planefit((x_allpix(density_mask(:)))*eff_pixel, (y_allpix(density_mask(:)))*eff_pixel, focus_map(density_mask(:)));
 
@@ -197,7 +197,7 @@ alignment.plane_yslope=cvals(3);%in microns z-shift per micron y
 alignment.x_plane_angle=atan(alignment.plane_xslope)*180/pi;  %in degrees
 alignment.y_plane_angle=atan(alignment.plane_yslope)*180/pi;  %in degrees
 
-alignment.x_screw_turns=alignment.plane_xslope*screw_span*tpi*(-1); %in turns
+alignment.x_screw_turns=alignment.plane_xslope*screw_span*tpi*(1); %in turns
 alignment.y_screw_turns=alignment.plane_yslope*screw_span*(1)*tpi;%in turns, reverse screw direction for y
 
 alignment.x_screw_dtheta=alignment.x_screw_turns*360; %in degrees

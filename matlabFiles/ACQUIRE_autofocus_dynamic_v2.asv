@@ -85,11 +85,7 @@ if smart_flag
 end
 
 %% Focus
-if enableFocus
-    [handles val] = FOCUS_Image(handles,0,1,1,0); %Update Z
-    z_init = getParams(handles,'ZPos');
-    [handles] = STAGE_MoveAbsolute(handles,{stages.axis.z},z_init+init_offset);
-end
+
 
 
 %         z_pos = z_temp + sweepMin - sweepStep;
@@ -166,8 +162,7 @@ else
     tree_counter(1:scan_width,2)=tree_lowbound+(tree_counter(1:scan_width,1)-1)*.1;     %Column 2 set to z position (nominal)
 end
 
-tt2 = toc(tt1);
-tt3 = tic();
+
 istart=tic;
 for m=start_ind:4:end_ind
     if FLAG_StopBtn('check')
@@ -201,7 +196,16 @@ end
 
 
 % [max_coarse,ind_coarse] = max(tree_counter(:,3));
-[xmax,imax,xmin,imin] = extrema(tree_counter(:,3));
+
+measured_mask=tree_counter(:,3)>0;
+        full_inds=tree_counter(measured_mask,1);
+        [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
+        
+        temp
+        imax=
+
+
+% [xmax,imax,xmin,imin] = extrema(tree_counter(:,3));
 secondary_flag=0;
 
 if length(imax)==1;
@@ -229,7 +233,7 @@ elseif strcmpi(focus_type,'second') || strcmpi(focus_type,'offset_second')
      if ((tree_counter(imax(1),2) - tree_counter(imax(2),2)) <= 0) && (abs(tree_counter(imax(2),2) - tree_counter(imax(1),2)) <= peak_gap_floor)
         %if this condition is met, two peaks but first peak is largest
         ind_coarse=imax(2);
-        secondary_flag
+        secondary_flag=1;
     elseif  ((tree_counter(imax(1),2) - tree_counter(imax(2),2)) > 0)  
         %if met there are two peaks, but second is larger than first
         ind_coarse= imax(1);
@@ -245,8 +249,6 @@ end
 
 
 
-tt4 = toc(tt3);
-tt5 = tic();
 if (ind_coarse==tree_counter(1,1))  || (abs(tree_counter(ind_coarse,2)-tree_counter(1,2))<peak_gap_floor)
     
     %extend tree counter by scan_length for lower z-positions
@@ -316,173 +318,11 @@ end;
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
     temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
-    [~,temp_ind_med] = max(temp,3);
+    [~,temp_ind_med] = max(temp(:,3));
     ind_med=temp(temp_ind_med,1);
     
     
      % acquire 100nm resolution data point
-    [handles, tree_counter(ind_med-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse-2,2));
-    
-    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-    cla(handles.axesPlot);
-    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-    
-    %both directions for fine
-    [handles, tree_counter(ind_med+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse+2,2));
-    
-    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-    cla(handles.axesPlot);
-    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-    
-    temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
-    [~,temp_ind_med] = max(temp,3);
-    ind_med=temp(temp_ind_med,1);
-
-%generate mask for filled in points
-
-% measured_mask=tree_counter(:,3)>0;
-% full_inds=tree_counter(measured_mask,1);
-% [xmax,imax,xmin,imin] = extrema(tree_counter(:,3));
-
-
-
-
-
-
-
-
-
-
-
-
-
-if length(imax)>=2 %multiple peaks detected
-    if imax(1)<imax(2) %particle peak is detected
-        
-        
-        
-    else  %secondary peak is overpowering particle peak, fill in gaps on particle peak
-        ind_span=full_inds(imax(1))-full_inds(imax(2));
-        half_span=ceil(ind_span/2);
-        z_span=tree_counter(full_inds(imax(1)),2)-tree_counter(full_inds(imax(2)),2);
-        ind_second=full_inds(imax(2));
-        if z_span >=peak_gap_floor  %if secondary peak is too far away, ignore it
-            ind_coarse=imax(1);
-        else
-            secondary_flag=1;
-            %% acquire 200nm resolution data point
-            [handles, tree_counter(ind_second-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-                tree_counter(ind_second-2,2));
-            
-            set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-            cla(handles.axesPlot);
-            plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-            
-            %both directions for med
-            [handles, tree_counter(ind_second+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-                tree_counter(ind_second+2,2));
-            
-            set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-            cla(handles.axesPlot);
-            plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-            
-            tt6 = toc(tt5);
-            tt7 = tic();
-            % FIND PEAK
-            measured_mask=tree_counter(:,3)>0;
-            full_inds=tree_counter(measured_mask,1);
-            [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
-            if length(imax)>=2 %if half_span is too big, could pick up on beginning of secondary peak.  fill inlater
-                
-            end
-            
-            
-            if full_inds(imax(1))==ind_coarse
-                ind_second_med=full_inds(imax(2));
-            else
-                ind_second_med=full_inds(imax(1));
-            end
-            
-            
-            % acquire 100nm resolution data points
-            [handles, tree_counter(ind_second_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-                tree_counter(ind_second_med-1,2));
-            
-            set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-            cla(handles.axesPlot);
-            plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-            
-            %do both direction for fine
-            [handles, tree_counter(ind_second_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-                tree_counter(ind_second_med+1,2));
-            
-            set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-            cla(handles.axesPlot);
-            plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-            
-            %Check to ensure fine max is bounded by 100nm increment values.
-            %if the either neighboring index to the fine max is unfilled, take
-            %the image before smoothing
-            % FIND PEAK
-            measured_mask=tree_counter(:,3)>0;
-            full_inds=tree_counter(measured_mask,1);
-            
-            [xmax,imax,xmin,imin] = extrema(tree_counter(measured_mask,3));
-            
-            if full_inds(imax(1))==ind_coarse
-                ind_second_fine=full_inds(imax(2));
-            else
-                ind_second_fine=full_inds(imax(1));
-            end
-            
-            if tree_counter(ind_second_fine-1,3)<0
-                [handles, tree_counter(ind_second_fine-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-                    tree_counter(ind_second_fine-1,2));
-            end
-            
-            if tree_counter(ind_second_fine+1,3)<0
-                [handles, tree_counter(ind_second_fine+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-                    tree_counter(ind_second_fine+1,2));
-            end
-            
-            
-            
-            
-        end
-        
-    end
-else %only 1 peak detected
-    
-end
-
-if ~secondary_flag
-    
-    
-    % acquire 200nm resolution data point
-    [handles, tree_counter(ind_coarse-2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse-2,2));
-    
-    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-    cla(handles.axesPlot);
-    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-    
-    %both directions for med
-    [handles, tree_counter(ind_coarse+2,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-        tree_counter(ind_coarse+2,2));
-    
-    set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-    cla(handles.axesPlot);
-    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-    
-    tt6 = toc(tt5);
-    tt7 = tic();
-    %% FIND PEAK
-    [max_med,ind_med] = max(tree_counter(:,3));
-    
-    
-    % acquire 100nm resolution data points
     [handles, tree_counter(ind_med-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
         tree_counter(ind_med-1,2));
     
@@ -490,7 +330,7 @@ if ~secondary_flag
     cla(handles.axesPlot);
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
-    %do both direction for fine
+    %both directions for fine
     [handles, tree_counter(ind_med+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
         tree_counter(ind_med+1,2));
     
@@ -498,82 +338,38 @@ if ~secondary_flag
     cla(handles.axesPlot);
     plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
     
-    %Check to ensure fine max is bounded by 100nm increment values.
-    %if the either neighboring index to the fine max is unfilled, take
-    %the image before smoothing
-    [max_fine,ind_fine] = max(tree_counter(:,3));
+    temp=tree_counter([ind_coarse-4:ind_coarse+4],:);
+    [~,temp_ind_fine] = max(temp(:,3));
+    ind_focus=temp(temp_ind_fine,1);
     
-    if tree_counter(ind_fine-1,3)<0
-        [handles, tree_counter(ind_fine-1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-            tree_counter(ind_fine-1,2));
-    end
+     set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
+    cla(handles.axesPlot);
+    plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
+    hold on;
+    plot(tree_counter(ind_focus,2),tree_counter(ind_focus,3),'og');
     
-    if tree_counter(ind_fine+1,3)<0
-        [handles, tree_counter(ind_fine+1,3)] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
-            tree_counter(ind_fine+1,2));
-    end
-    
-end
+
+[handles, ~] = ACQUIRE_DefocusMoveAndScan_diffG(handles,zAxes,...
+        tree_counter(ind_focus,2));
 
 
+% 
+% 
+% %%identify focal plane
+% count_condensed=tree_counter(tree_counter(:,3)>0,:);
+% count_smooth=count_condensed;
+% for i=1:size(count_condensed,1)
+%     if i==1
+%         count_smooth(i,3)=mean(count_condensed(i:i+1,3));
+%     elseif i==size(count_condensed,1)
+%         count_smooth(i,3)=mean(count_condensed(i-1:i,3));
+%     else
+%         count_smooth(i,3)=mean(count_condensed(i-1:i+1,3));
+%     end
+% end
 
 
-%%identify focal plane
-count_condensed=tree_counter(tree_counter(:,3)>0,:);
-count_smooth=count_condensed;
-for i=1:size(count_condensed,1)
-    if i==1
-        count_smooth(i,3)=mean(count_condensed(i:i+1,3));
-    elseif i==size(count_condensed,1)
-        count_smooth(i,3)=mean(count_condensed(i-1:i,3));
-    else
-        count_smooth(i,3)=mean(count_condensed(i-1:i+1,3));
-    end
-end
-
-
-tt8 = toc(tt7);
-tt9 = tic();
-
-[max_focus,smooth_focus]=max(count_smooth(:,3));
-ind_focus=count_smooth(smooth_focus,1);
-
-%%hack for secondary peak
-if secondary_flag
-    ind_focus=ind_second_fine;
-    disp('Secondary Peak Detected!');
-else
-    disp('Primary Peak Detected');
-end
-
-disp(['Max Power: ' num2str(max_focus)]);
-
-set(gcf,'CurrentAxes',handles.axesPlot); %point to plot axes
-cla(handles.axesPlot);
-plot(tree_counter(tree_counter(:,3)>0,2),tree_counter(tree_counter(:,3)>0,3),'-ob');
-hold on;
-plot(count_smooth(:,2),count_smooth(:,3),'-r');
-
-if secondary_flag
-    plot(tree_counter(ind_focus,2),tree_counter(ind_focus,3),'dg');
-else
-    plot(count_condensed(smooth_focus,2),count_condensed(smooth_focus,3),'dg');
-end
-
-hold off;
-
-
-[offset] = tree_counter(ind_focus,2) - z_init;
-disp(['Focus offset: ' num2str(offset)]);
-[handles] = STAGE_MoveAbsolute(handles,zAxes,tree_counter(ind_focus,2));
-
-if ROI_flag
-    [handles] = setParams(handles,'ROI',curROI);
-end
-
-tt10 = toc(tt9);
-tt11 = tic();
-if strcmpi(options,'save')
+if strcmpi(save_flag,'save')
     [handles,data] = ACQUIRE_scan(handles,'save'); %Acquire a scan
     %             [particle_type] = getParams(handles,'ParticleType');
     %             [minSize] = getParams(handles,'MinHist');
@@ -581,8 +377,6 @@ if strcmpi(options,'save')
     
     particle_count = max_focus;
     
-    %             [particle_count,ParticleData] = spd_automated(handles,data,particle_type,minSize,maxSize); %Detect particles
-    %             disp(['Full FOV - ' particle_type ' Particles found: ' num2str(particle_count)]);
     
     output = OUTPUT_getVariables(handles,root_name,data,particle_count,offset);
 else
@@ -592,7 +386,7 @@ else
     output.focus_plane = tree_counter(ind_focus,2);
     output.numLoop = numLoop;
 end
-tt12 = toc(tt11);
+
 %         [handles] = LEDS_setState(handles,'vacuumoff');
 %[tt2 tt4 tt6 tt8 tt10 tt12]
 
