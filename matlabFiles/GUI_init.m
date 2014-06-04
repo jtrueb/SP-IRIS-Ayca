@@ -358,7 +358,7 @@ set(handles.popupSelectRefParticle,'String',handles.const.ParticleType);
 set(handles.popupFittingMethod,'String',handles.const.ProcessingMethods);
 [handles] = setParams(handles,'Instrument_fit',instrument);
 [handles] = setParams(handles,'FitMethod','Dry');
-[handles] = setParams(handles,'IntensityTh',0.05);
+[handles] = setParams(handles,'IntensityTh',0.4);
 [handles] = setParams(handles,'EdgeTh',2);
 [handles] = setParams(handles,'TemplateSize',9);
 [handles] = setParams(handles,'SD',1.5);

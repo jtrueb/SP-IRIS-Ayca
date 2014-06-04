@@ -58,6 +58,12 @@ if useStages
         
     elseif strcmpi(whatStages,'V5') %Stages on the hybrid
         [handles.Stage] = STAGE_INIT_v5_hybrid(handles.const.instrument_port_cfg.mmc100,handles.const.instrument_port_cfg.pollux);
+        if handles.Stage.enabled==1
+            handles=setParams(handles,'EnableStages',1);
+        else
+            handles=setParams(handles,'EnableStages',0);
+        end
+        
     elseif strcmpi(whatStages,'V6') %Stages on the ayca highmag
         [handles.Stage] = STAGE_INIT_v6(handles.const.instrument_port_cfg.mmc100,handles.const.instrument_port_cfg.mmc100Z);
         if handles.Stage.enabled==1

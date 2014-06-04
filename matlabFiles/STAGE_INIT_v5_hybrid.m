@@ -11,6 +11,17 @@ stages.status=[0,0,0];
 % stages.host = ports.SerialPorts{1};
 % stages.enabled = 0;
 stages.version = 'V5';
+
+xy_enable_flag=0;
+if stages.enabled==1
+    xy_enable_flag=1;  
+    disp('Connection to XY VT-21 stages successful.');
+else
+    disp('Could not connect to XY VT-21 Stages');
+end
+      
+
+
 if nargin < 1
     stages.mmc_host = 'COM13';
 else
@@ -60,14 +71,26 @@ client = serial(stages.mmc_host);
 set(client, 'BaudRate', 38400, 'StopBits', 1);
 set(client, 'Terminator', 'CR', 'Parity', 'none');
 set(client, 'FlowControl', 'none');
-    
+
+
+z_enable_flag=0;
+
 try
     fopen(client);    
     %set(client, 'ReadAsyncMode','continuous');
     stages.mmc_portnumber = client;
-    stages.enabled = 1;
+   z_enable_flag=1;
+       disp('Connection to Z PPS-20 stage successful.');
 catch
-    stages.enabled = 0;
+    disp('Could not connect to Z PPS-20 Stage.');
+
+    z_enable_flag=0;
+end
+
+if (xy_enable_flag)&&(z_enable_flag)
+    stages.enabled=1;
+else
+    stages.enabled=0;
 end
 
 

@@ -7,7 +7,7 @@ function [handles,output] = ACQUIRE_autofocus_dynamic_v2(handles,numLoop,z_init,
 %good defaults are 17,25,33
 %ROI_flag = 1 reduces focus FOV to 1/4 of full for increased speed
 
-peak_gap_floor=2;
+peak_gap_floor=3;
 peak_gap_ceil=2;
 maxLoop = 6;
 secondary_flag=0;
